@@ -1,0 +1,88 @@
+#include "Adafruit_FONA.h"
+
+#define FONA_RX 2
+#define FONA_TX 9
+#define FONA_RST 4
+
+// this is a large buffer for replies
+char replybuffer[255];
+
+
+// I USE HARDWARESERIAL BECAUSE SOFTWARESERIAL IS NOT WORKING
+//HardwareSerial *fonaSerial = &Serial1;
+
+// Use this for FONA 800 and 808s
+
+#include <SoftwareSerial.h>
+
+// Configure software serial port
+SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
+SoftwareSerial *fonaSerial = &fonaSS;
+
+Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
+
+uint8_t type;
+
+void setup() {
+  while (!Serial);
+
+  Serial.begin(9600);
+  Serial.println(F("FONA basic test"));
+  Serial.println(F("Initializing....(May take 3 seconds)"));
+
+  fonaSerial->begin(4800);
+  if (! fona.begin(*fonaSerial)) {
+    Serial.println(F("Couldn't find FONA"));
+    while (1);
+  }
+  #define Signal_Pin 3  // Modify this pin as per your connection
+
+  pinMode(Signal_Pin , INPUT_PULLUP);
+  Serial.begin(9600);
+
+  if ( digitalRead(Signal_Pin) == 0)
+   // Serial.println ("PowerLoss");
+   {int8_t smsnum;}
+
+ 
+
+  // Unlock the SIM with a PIN code
+  char PIN[5] = "0000";
+  Serial.println(PIN);
+  Serial.print(F("Unlocking SIM card: "));
+  if (! fona.unlockSIM(PIN)) {
+    Serial.println(F("Failed"));
+  } else {
+    Serial.println(F("OK!"));
+  }
+
+}
+
+
+int8_t smsnum;
+bool do_once = false;
+void loop() {
+  if (digitalRead(10) == true && do_once == false) {
+    do_once = true;
+    char sendto[21] = "+447807285586", message[141] = "Loss of Neutral to Panel 2"; 
+    Serial.print(F("Send to #"));
+    Serial.println(sendto);
+    Serial.println(message);
+    if (!fona.sendSMS(sendto, message)) {
+      Serial.println(F("Failed"));
+    } else {
+      Serial.println(F("Sent!"));
+    }
+  }
+  else if (digitalRead(10) == false) {
+    do_once = false;
+  }
+}
+
+
+//Variable to save incoming SMS characters
+char incoming_char=0;
+//Allarm status
+byte allarmSent = LOW;
